@@ -1,10 +1,9 @@
 name: CI
 
 on:
+  # 所有分支的 push 都跑：develop 才是日常提交的地方，不能被漏掉
   push:
-    branches: [master]
   pull_request:
-    branches: [master]
 
 # 只读即可：安装器会写到系统路径，但 CI 里不该真的装
 permissions:
