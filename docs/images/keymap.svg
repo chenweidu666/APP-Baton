@@ -70,7 +70,7 @@
 <line x1="452" y1="523" x2="1352" y2="523" stroke="#f0f2f4"/>
 <text x="452" y="554" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="18" font-weight="600" fill="#1b1f23">返回</text>
 <text x="584" y="554" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="17" fill="#2f6f4f">删除一个</text>
-<text x="922" y="554" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="17" fill="#8a6d1f">—</text>
+<text x="922" y="554" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="17" fill="#8a6d1f">连续删除</text>
 <text x="1194" y="554" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="17" fill="#8c4a4a">—</text>
 <line x1="452" y1="569" x2="1352" y2="569" stroke="#f0f2f4"/>
 <text x="452" y="600" font-family="'Noto Sans CJK SC','WenQuanYi Micro Hei','Source Han Sans SC',sans-serif" font-size="18" font-weight="600" fill="#1b1f23">主页</text>

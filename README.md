@@ -69,7 +69,7 @@ Requirements:
 - Flutter 3.2x+ (only for the tray app)
 
 ```bash
-git clone https://github.com/chenweidu666/Baton.git
+git clone https://github.com/chenweidu666/APP-Baton.git
 cd Baton
 ./install.sh          # deploy scripts / udev rule / systemd units / tray app + autostart
 mi-remote doctor      # self-check (expect: 12 pass / 1 warning / 0 fail)

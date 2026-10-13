@@ -17,7 +17,7 @@
 ## 开发
 
 ```bash
-git clone https://github.com/chenweidu666/Baton.git
+git clone https://github.com/chenweidu666/APP-Baton.git
 cd Baton
 ./install.sh              # 幂等；已就绪的部分会自动跳过
 cd app && ./run.sh        # 开发托盘应用（构建 + 重启）

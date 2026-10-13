@@ -58,7 +58,7 @@
 - Flutter（仅托盘应用需要，3.2x+）
 
 ```bash
-git clone https://github.com/chenweidu666/Baton.git
+git clone https://github.com/chenweidu666/APP-Baton.git
 cd Baton
 ./install.sh          # 部署脚本 / udev 规则 / systemd 服务 / 托盘应用 + 开机自启
 mi-remote doctor      # 自检（应为 12 通过 / 1 警告 / 0 失败）
