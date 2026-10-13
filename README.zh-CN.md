@@ -131,7 +131,6 @@ GNOME（Mutter）**不实现** `wtype` 依赖的虚拟键盘协议，`xdotool` �
 ├── system/      udev 规则 · systemd 单元 · 键位配置 · 桌面图标 · 本机补丁
 ├── tests/       行为仿真脚本（灌合成事件，不产生真实按键）
 ├── docs/        键位表 · 适配流程 · 需求池
-├── extras/      留档的未启用实现
 └── install.sh   一键部署（幂等）
 
 > 键位图/脚本说明：`tools/gen-keymap-image.py`（由配置生成键位图）、`tools/make-logo.py`（生成 logo）、`scripts/window-switcher`（窗口切换器）等，详见各文件头部注释。

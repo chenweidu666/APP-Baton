@@ -144,7 +144,6 @@ because the upstream header libraries are gone. Hence a small uinput shim:
 ├── system/      udev rule · systemd units · keymap config · desktop entry · local patch
 ├── tests/       behaviour simulations (synthetic events, no real keystrokes)
 ├── docs/        keymap table · engineering log · requirement pool
-├── extras/      archived implementations that are no longer enabled
 └── install.sh   one-shot idempotent deployment
 ```
 

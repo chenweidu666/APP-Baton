@@ -11,7 +11,7 @@
 - **免密码重启蓝牙**（可选兜底）：`system/49-baton-bluetooth.rules` 随 `install.sh` 装到 polkit，只放开本地会话活动用户启停/重启 `bluetooth.service`（不存密码，公开仓库安全）
 - **长按 OK = `Ctrl+Enter`**：给 OpenCode 网页版发送消息；短按仍是 `Enter`
 - **托盘显示遥控器电量**：读遥控器 Battery Service（`0x180F`，`bluetoothctl info` 的 `Battery Percentage`），在托盘菜单显示 `电量：84%`；≤20% 标 ⚠️ 并弹一次「电量偏低」提醒（回到 >25% 后重新武装）
-- **长按返回 = 连续快删**：长按 ≥350ms 触发 `backspace-burst`，借系统按键重复连删约 25 个字符（短按仍是删一个）。脚本从 `extras/` 提回 `scripts/`；需配合本机 mapping 补丁，重装 mi-remote 后重跑 `apply-patch.sh --mapping`
+- **长按返回 = 连续快删**：长按 ≥350ms 触发 `backspace-burst`，借系统按键重复连删约 25 个字符（短按仍是删一个）。需配合本机 mapping 补丁，重装 mi-remote 后重跑 `apply-patch.sh --mapping`
 - **小米 MiMo 云端 ASR**：`system/cloud-asr.json` 同时放地址、模型和 api_key（gitignore）；挂掉时桌面通知，可用 `cloud-asr-health` 探测。文档写明建议理由（远场识别率、内存与时延、官方单价 ¥0.5/音频小时 与 Token Plan 30M Credits/小时）
 - **转写后整理（可选，默认关）**：`mimo-v2.5-asr` 的提示词由小米网关注入、调用方改不了，所以「口语 → 书面 prompt」改成转写后再走一道对话模型（`mimo-v2.6-flash`）。`cloud-asr.json` 的 `cleanup` 段控制开关/模型/提示词/超时；任何失败（超时、空结果、长度异常、像拒答、像工具调用）都**回退转写原文**，保证不掉字。默认关是因为延迟：只走 ASR 实测约 **1 秒**，加一层约 **2 秒**（重启后第一句约 7.5 秒）
 - **仓库结构**：新增 `tools/`（维护工具：键位图生成、logo 生成），运行时脚本仍留在 `scripts/`（会被装进 `~/.local/bin`）
@@ -59,7 +59,7 @@
 - OpenCode 层（leader 宏那套）；备份见 `system/mapping.json.with-opencode-layer.bak`
 - 启动层（短按 TV 进层启动 5 个目标）；备份见 `system/mapping.json.with-launch-layer.bak`
 - 鼠标模式（电源键改为 Esc/关窗后无入口；实现仍在，可用 `power.hold = {"type":"mouse_mode"}` 恢复）
-- 长按返回"连续快删"（实现留档于 `extras/backspace-burst` 与 `system/patch/`）
+- 长按返回"连续快删"（**后于 2026-10-08 重新启用**，实现见 `scripts/backspace-burst` + `system/patch/apply-patch.sh --mapping`）
 - 本分支不再附带本地 Paraformer（`models/paraformer-zh/`）；语音只走小米云端
 
 ### 修复（Fixed）
