@@ -1,0 +1,15 @@
+# Baton Mi 语音「重复订阅」自愈守卫：检出 BLE 音频通知被重复投递就重启 mi-remote
+# 详见 scripts/baton-asr-guard 顶部说明（判据：一次录音会话里「音频流开始」> 1 次）
+[Unit]
+Description=Baton Mi RC003 duplicate-subscription self-heal for cloud ASR
+After=graphical-session.target mi-remote.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/baton-asr-guard
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=graphical-session.target

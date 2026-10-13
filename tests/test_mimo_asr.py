@@ -19,10 +19,55 @@ from mimo_asr import (  # noqa: E402
     _read_env_file,
     _sanitize_cleanup,
     cleanup_config,
+    glossary_block,
     load_api_key,
     load_asr_config,
+    parse_glossary,
     pcm_to_wav_bytes,
 )
+
+
+class MimoAsrGlossaryTest(unittest.TestCase):
+    def test_plain_string_list(self) -> None:
+        self.assertEqual(parse_glossary(["Web Coding"]), [("Web Coding", [])])
+
+    def test_dict_with_aliases(self) -> None:
+        raw = [{"term": "Vibe Coding", "aliases": ["Web God", "Web Calling"]}]
+        self.assertEqual(
+            parse_glossary(raw), [("Vibe Coding", ["Web God", "Web Calling"])]
+        )
+
+    def test_alias_may_be_single_string(self) -> None:
+        self.assertEqual(parse_glossary([{"term": "A", "aliases": "B"}]), [("A", ["B"])])
+
+    def test_skips_invalid_entries(self) -> None:
+        raw = [123, {"aliases": ["x"]}, {"term": "  "}, None, "OK"]
+        self.assertEqual(parse_glossary(raw), [("OK", [])])
+
+    def test_non_list_is_empty(self) -> None:
+        self.assertEqual(parse_glossary(None), [])
+        self.assertEqual(parse_glossary({"term": "A"}), [])
+
+    def test_block_empty(self) -> None:
+        self.assertEqual(glossary_block([]), "")
+
+    def test_block_renders_term_and_aliases(self) -> None:
+        block = glossary_block([("Vibe Coding", ["Web God"]), ("OpenCode", [])])
+        self.assertIn("Vibe Coding", block)
+        self.assertIn("Web God", block)
+        self.assertIn("OpenCode", block)
+
+    def test_config_reads_glossary(self) -> None:
+        cfg = cleanup_config({"cleanup": {"enabled": True, "glossary": ["Vibe Coding"]}})
+        self.assertEqual(cfg["glossary"], [("Vibe Coding", [])])
+
+    def test_config_without_glossary_is_empty(self) -> None:
+        self.assertEqual(cleanup_config({"cleanup": {"enabled": True}})["glossary"], [])
+
+    def test_base_prompt_has_no_dangling_glossary_reference(self) -> None:
+        # 没配术语表时，提示词里不该出现「术语表」，否则是悬空引用。
+        cfg = cleanup_config({"cleanup": {"enabled": True}})
+        self.assertNotIn("术语表", cfg["prompt"])
 
 
 class MimoAsrCleanupConfigTest(unittest.TestCase):

@@ -98,7 +98,7 @@ fi
 if [ "$DO_SERVICE" = 1 ]; then
   echo "== 6/6 systemd 用户服务 =="
   mkdir -p "$UNITS"
-  for unit in mi-remote.service mi-remote-uinputd.service baton-recover.service baton-bt-watchdog.service; do
+  for unit in mi-remote.service mi-remote-uinputd.service baton-recover.service baton-bt-watchdog.service baton-asr-guard.service; do
     sed -e "s|@BATON_ROOT@|$ROOT|g" -e "s|/home/chenwei|$HOME|g" -e "s|~/.local/bin|$BIN|g" "$ROOT/system/$unit" > "$UNITS/$unit"
     echo "   $unit"
   done
@@ -106,6 +106,7 @@ if [ "$DO_SERVICE" = 1 ]; then
   systemctl --user enable --now mi-remote-uinputd.service
   systemctl --user enable --now baton-recover.service
   systemctl --user enable --now baton-bt-watchdog.service
+  systemctl --user enable --now baton-asr-guard.service
   systemctl --user restart mi-remote.service || true
   sleep 3
   echo "   服务状态: $(systemctl --user is-active mi-remote.service) / $(systemctl --user is-active mi-remote-uinputd.service)"

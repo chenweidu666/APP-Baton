@@ -37,6 +37,10 @@
 ### 变更（Changed）
 
 - 对外名称改为 **Baton Mi**（Mi = 小米语音遥控）
+- **第二层整理（`cleanup`）改为「懂行」**：提示词写明「用户是程序员、日常做程序开发」，遇近音词优先按开发语境理解；
+  新增 `glossary` 术语表**发给大模型**（网关会忽略 ASR 的 `hotwords`，专有词偏置只能走第二层）。
+  实测遥控器把 `Vibe Coding` 快读成 `Web God`/`Web Calling`，配术语表后稳定归一到 `Vibe Coding`，表外词原样保留。
+  同时写死「语境不足以确定时保持原样，不许凭空补造专有名词」——没有这条时模型会把不认识的词自己编一个
 
 - 文档合并：`docs/键位表.md` + `docs/适配流程.md` + `docs/需求.md` → 单份 [`docs/指南.md`](docs/指南.md)
   （第 1 章键位表 · 第 2 章适配流程与踩坑 · 第 3 章路线图；已回退功能不再写成操作指南）
@@ -60,7 +64,7 @@
 
 ### 修复（Fixed）
 
-- 语音识别乱码：默认 `--gain 6` 把遥控麦削波（峰值顶满 32768）→ 服务改为 `--gain 0`
+- 语音识别乱码：默认 `--gain 6` 把信号推得更热 → 服务改为 `--gain 0`（**当时以为这是乱码主因，后经坑 14 更正：真因是音频通知重复订阅，与增益无关**；`--gain 0` 仍保留）
 - GNOME 下按键注入全线失效：Mutter 不实现 `wtype` 依赖的虚拟键盘协议 → 卸载 wtype + 自写 uinput 垫片
 - 官方安装器（v0.4.1）venv shebang 残留临时目录导致装完无法执行 → 批量改写 shebang
 - 终端里语音粘贴无效 → 服务参数 `--paste-shortcut ctrl-shift-v`
@@ -69,3 +73,4 @@
 - **云端 ASR 语种从写死 `zh` 改为 `auto`**：`mimo-v2.5-asr` 支持中英双语与代码混说，官方 `asr_options.language` 默认就是 `auto`；写死 `zh` 会把英文按中文音译（`Cursor → 克鲁兹`）
 - **送云端前加 RMS 归一化（AGC）**：把每句话归一到统一目标电平（`normalize` 段，默认 `-16 dBFS`），峰值上限只压尖峰而不整句拉低；实测模型对电平不敏感，故定位为一致性保险
 - **重启后遥控器整只失效（按键 + 语音全无反应）**：BlueZ 的 HID-over-GATT 通道偶尔没挂上 —— 蓝牙显示“已连接”、GATT 里也有 HID 服务，但 `/dev/input` 没有节点。仅“断开重连”清不掉。新增自愈脚本 `scripts/baton-bt-recover`（轻量重连 → `block/unblock` → 重启 `bluetooth.service`，逐级复检），托盘「重连蓝牙（自愈）」改调它，并新增 `baton-recover.service` 在登录后自动修复一次（见 `docs/指南.md` 坑 12）
+- **语音识别越用越不准（乱码 / 上屏字少，曾被误判为"遥控麦太热"）**：`mi-remote` 每经历一次 BLE 重连，音频 notify 就多出一层订阅，同一帧音频被解码 **N 次**，喂给云端 ASR 的 PCM 被拉长为实际录音的 N 倍（实测进程内从 0.93 一路涨到 4.88 倍）。ADPCM 解码器被喂重复字节后预测器顶轨，波形变成 `峰值 32768` + 大直流偏置 + 低频能量占大头——这正是历史"削波乱码"的真相。新增常驻守卫 `scripts/baton-asr-guard`（判据：一次录音会话里「音频流开始」> 1 次即重启 `mi-remote`；随机自启 `baton-asr-guard.service`）；急用时 `systemctl --user restart mi-remote` 可立即恢复到 1×（见 `docs/指南.md` 坑 14）
