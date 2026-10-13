@@ -14,7 +14,7 @@ jobs:
     name: Python (unittest + ruff)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -31,7 +31,7 @@ jobs:
     name: Shell / Python syntax
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: bash scripts
         run: for f in install.sh scripts/*; do
                case "$(head -1 "$f")" in
@@ -49,7 +49,7 @@ jobs:
     name: Flutter analyze
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
