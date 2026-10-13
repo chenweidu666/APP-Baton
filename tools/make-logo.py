@@ -32,6 +32,7 @@
   ARK_API_KEY=xxx python3 tools/make-logo.py all            # 出图并直接定稿
   python3 tools/make-logo.py install                        # 刷新桌面 / 应用图标
 """
+
 from __future__ import annotations
 
 import argparse
@@ -81,22 +82,27 @@ PRESETS = {
 def api_key(args) -> str:
     key = args.key or os.environ.get("ARK_API_KEY", "")
     if not key:
-        sys.exit("  ⚠️ 缺少 API Key：请设置环境变量 ARK_API_KEY=xxx（或用 --key），不要把密钥写进仓库")
+        sys.exit(
+            "  ⚠️ 缺少 API Key：请设置环境变量 ARK_API_KEY=xxx（或用 --key），不要把密钥写进仓库"
+        )
     return key
 
 
 def generate(prompt: str, key: str, out: pathlib.Path, model: str = MODEL) -> None:
-    body = json.dumps({
-        "model": model,
-        "prompt": prompt,
-        "sequential_image_generation": "disabled",
-        "response_format": "url",
-        "size": "2K",
-        "stream": False,
-        "watermark": False,
-    }).encode()
+    body = json.dumps(
+        {
+            "model": model,
+            "prompt": prompt,
+            "sequential_image_generation": "disabled",
+            "response_format": "url",
+            "size": "2K",
+            "stream": False,
+            "watermark": False,
+        }
+    ).encode()
     req = urllib.request.Request(
-        ARK_URL, data=body,
+        ARK_URL,
+        data=body,
         headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"},
     )
     with urllib.request.urlopen(req, timeout=180) as resp:
@@ -114,7 +120,7 @@ def cmd_gen(args) -> int:
     key = api_key(args)
     for i in range(1, args.variants + 1):
         generate(prompt, key, out_dir / f"{i}.png", args.model)
-    print(f"\n  下一步：挑一张，然后 python3 tools/make-logo.py refine <图> [--mode circle]")
+    print("\n  下一步：挑一张，然后 python3 tools/make-logo.py refine <图> [--mode circle]")
     return 0
 
 
@@ -125,7 +131,9 @@ def circle_mask(side: int, ss: int = 4) -> Image.Image:
     yy, xx = np.mgrid[0:n, 0:n].astype(float)
     r = n / 2.0
     d = np.sqrt((xx - (r - 0.5)) ** 2 + (yy - (r - 0.5)) ** 2)
-    return Image.fromarray(np.where(d <= r * 0.99, 255, 0).astype(np.uint8), "L").resize((side, side), Image.LANCZOS)
+    return Image.fromarray(np.where(d <= r * 0.99, 255, 0).astype(np.uint8), "L").resize(
+        (side, side), Image.LANCZOS
+    )
 
 
 def flood_alpha(rgb: np.ndarray, tol: int = 70) -> np.ndarray:
@@ -138,62 +146,88 @@ def flood_alpha(rgb: np.ndarray, tol: int = 70) -> np.ndarray:
     for x in range(w):
         for y in (0, h - 1):
             if near[y, x] and not out[y, x]:
-                out[y, x] = True; dq.append((y, x))
+                out[y, x] = True
+                dq.append((y, x))
     for y in range(h):
         for x in (0, w - 1):
             if near[y, x] and not out[y, x]:
-                out[y, x] = True; dq.append((y, x))
+                out[y, x] = True
+                dq.append((y, x))
     while dq:
         y, x = dq.popleft()
         for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
             ny, nx = y + dy, x + dx
             if 0 <= ny < h and 0 <= nx < w and near[ny, nx] and not out[ny, nx]:
-                out[ny, nx] = True; dq.append((ny, nx))
+                out[ny, nx] = True
+                dq.append((ny, nx))
     return np.where(out, 0, 255).astype(np.uint8)
 
 
-def refine(src_path: pathlib.Path, out_path: pathlib.Path, mode: str = "auto", size: int = 512) -> None:
+def refine(
+    src_path: pathlib.Path, out_path: pathlib.Path, mode: str = "auto", size: int = 512
+) -> None:
     from scipy import ndimage
 
     src = Image.open(src_path).convert("RGB")
     rgb = np.asarray(src).astype(float)
     h, w, _ = rgb.shape
 
-    body = np.sqrt(((rgb - WHITE) ** 2).sum(2)) > 80          # 离白色足够远 = 主体
+    body = np.sqrt(((rgb - WHITE) ** 2).sum(2)) > 80  # 离白色足够远 = 主体
     lab, _ = ndimage.label(body)
-    sizes = np.bincount(lab.ravel()); sizes[0] = 0
+    sizes = np.bincount(lab.ravel())
+    sizes[0] = 0
     big = int(sizes.argmax())
     ys, xs = np.where(lab == big)
     x0, x1, y0, y1 = int(xs.min()), int(xs.max()) + 1, int(ys.min()), int(ys.max()) + 1
     bw, bh = x1 - x0, y1 - y0
     cw, ch = max(1, min(20, bw // 4)), max(1, min(20, bh // 4))
-    corner_frac = float(np.mean([
-        (lab[y0:y0+ch, x0:x0+cw] == big).mean(), (lab[y0:y0+ch, x1-cw:x1] == big).mean(),
-        (lab[y1-ch:y1, x0:x0+cw] == big).mean(), (lab[y1-ch:y1, x1-cw:x1] == big).mean(),
-    ]))
-    is_circle = mode == "circle" or (mode == "auto" and abs(bw / bh - 1) < 0.04 and corner_frac < 0.05)
-    print(f"  外接框 {bw}x{bh}（宽高比 {bw/bh:.3f}）· 四角主体占比 {corner_frac:.3f} → "
-          f"{'圆形 → 解析圆遮罩' if is_circle else '非圆 → 泛洪遮罩'}")
+    corner_frac = float(
+        np.mean(
+            [
+                (lab[y0 : y0 + ch, x0 : x0 + cw] == big).mean(),
+                (lab[y0 : y0 + ch, x1 - cw : x1] == big).mean(),
+                (lab[y1 - ch : y1, x0 : x0 + cw] == big).mean(),
+                (lab[y1 - ch : y1, x1 - cw : x1] == big).mean(),
+            ]
+        )
+    )
+    is_circle = mode == "circle" or (
+        mode == "auto" and abs(bw / bh - 1) < 0.04 and corner_frac < 0.05
+    )
+    print(
+        f"  外接框 {bw}x{bh}（宽高比 {bw / bh:.3f}）· 四角主体占比 {corner_frac:.3f} → "
+        f"{'圆形 → 解析圆遮罩' if is_circle else '非圆 → 泛洪遮罩'}"
+    )
 
     side = max(bw, bh)
     cx, cy = (x0 + x1) / 2, (y0 + y1) / 2
     bx0, by0 = int(round(cx - side / 2)), int(round(cy - side / 2))
-    bgc = tuple(int(v) for v in np.median(np.stack([rgb[0, 0], rgb[0, -1], rgb[-1, 0], rgb[-1, -1]]), axis=0))
+    bgc = tuple(
+        int(v)
+        for v in np.median(np.stack([rgb[0, 0], rgb[0, -1], rgb[-1, 0], rgb[-1, -1]]), axis=0)
+    )
     work = Image.new("RGB", (side, side), bgc)
-    work.paste(src.crop((max(bx0, 0), max(by0, 0), min(bx0 + side, w), min(by0 + side, h))),
-               (max(0, -bx0), max(0, -by0)))
+    work.paste(
+        src.crop((max(bx0, 0), max(by0, 0), min(bx0 + side, w), min(by0 + side, h))),
+        (max(0, -bx0), max(0, -by0)),
+    )
 
     img = work.convert("RGBA")
     if is_circle:
         img.putalpha(circle_mask(side))
     else:
-        img.putalpha(Image.fromarray(flood_alpha(np.asarray(work)), "L").filter(ImageFilter.MinFilter(3)))
+        img.putalpha(
+            Image.fromarray(flood_alpha(np.asarray(work)), "L").filter(ImageFilter.MinFilter(3))
+        )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.resize((size, size), Image.LANCZOS).save(out_path, "PNG")
-    chk = np.asarray(Image.open(out_path)); al = chk[:, :, 3]
-    print(f"  ✅ {out_path}  {size}px · 透明 {100*(al==0).mean():.1f}%（圆≈21.5%）· "
-          f"四角 {al[0,0]}/{al[0,-1]}/{al[-1,0]}/{al[-1,-1]}")
+    chk = np.asarray(Image.open(out_path))
+    al = chk[:, :, 3]
+    print(
+        f"  ✅ {out_path}  {size}px · 透明 {100 * (al == 0).mean():.1f}%（圆≈21.5%）· "
+        f"四角 {al[0, 0]}/{al[0, -1]}/{al[-1, 0]}/{al[-1, -1]}"
+    )
 
 
 def cmd_refine(args) -> int:
@@ -219,15 +253,23 @@ def cmd_install(args) -> int:
     dst_dir.mkdir(parents=True, exist_ok=True)
     subprocess.run(["install", "-m", "644", str(src), str(dst_dir / "baton.png")], check=True)
     if subprocess.run(["which", "gtk-update-icon-cache"], capture_output=True).returncode == 0:
-        subprocess.run(["gtk-update-icon-cache", "-f", "-t",
-                        str(pathlib.Path.home() / ".local/share/icons/hicolor")],
-                       capture_output=True)
+        subprocess.run(
+            [
+                "gtk-update-icon-cache",
+                "-f",
+                "-t",
+                str(pathlib.Path.home() / ".local/share/icons/hicolor"),
+            ],
+            capture_output=True,
+        )
     print(f"  ✅ 已安装到 {dst_dir / 'baton.png'}（桌面条目用 Icon=baton 引用）")
     return 0
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="生成 / 精修项目 logo（火山引擎 Doubao-Seedream + 几何精修）")
+    ap = argparse.ArgumentParser(
+        description="生成 / 精修项目 logo（火山引擎 Doubao-Seedream + 几何精修）"
+    )
     ap.add_argument("--key", help="方舟 API Key（也可用环境变量 ARK_API_KEY）")
     ap.add_argument("--model", default=MODEL, help=f"出图模型，默认 {MODEL}")
     sub = ap.add_subparsers(dest="cmd", required=True)

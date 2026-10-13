@@ -3,6 +3,7 @@
 
 做法：用 MappingEngine 灌入合成按键事件，把 run_action / on_layer 换成记录器。
 """
+
 import asyncio
 import json
 import pathlib

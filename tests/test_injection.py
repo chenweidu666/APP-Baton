@@ -4,6 +4,7 @@
 验证链路：mi-remote 动作引擎 → ydotool(垫片) → uinput → GNOME
 用音量键作为可观测结果（XF86AudioRaiseVolume / LowerVolume）。
 """
+
 import asyncio
 import sys
 

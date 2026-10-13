@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import io
 import json
 import logging
@@ -189,11 +190,11 @@ def resolve_asr_language(cfg: dict[str, Any], fallback: str | None = None) -> st
 # 归一化能保证「送出去的信号电平一致、不削顶」，但不能还原已经削掉的波形。
 _DEFAULT_NORMALIZE: dict[str, Any] = {
     "enabled": True,
-    "target_rms_dbfs": -16.0,   # 目标 RMS（0 dBFS = 32768）
+    "target_rms_dbfs": -16.0,  # 目标 RMS（0 dBFS = 32768）
     "peak_ceiling_dbfs": -2.0,  # 峰值上限
     "max_gain_db": 15.0,
     "min_gain_db": -12.0,
-    "min_input_rms": 60.0,      # 低于此 RMS（≈-55 dBFS）视为静音，不放大
+    "min_input_rms": 60.0,  # 低于此 RMS（≈-55 dBFS）视为静音，不放大
 }
 _FULL_SCALE = 32768.0
 
@@ -563,7 +564,7 @@ def notify_asr_down(reason: str) -> None:
         return
     _last_down_notify = now
     logger.error("云端 ASR 不可用: %s", reason)
-    try:
+    with contextlib.suppress(OSError):
         subprocess.run(
             [
                 "notify-send",
@@ -581,8 +582,6 @@ def notify_asr_down(reason: str) -> None:
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
-    except OSError:
-        pass
 
 
 def probe_health(*, notify: bool = False) -> bool:

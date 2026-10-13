@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """行为仿真：验证返回键 单击/双击/长按 三种行为（不产生任何真实按键）。"""
+
 import asyncio
 import json
 import pathlib
@@ -30,7 +31,9 @@ async def main() -> int:
     print(f"double_ms = {config.settings.double_ms}  hold_ms = {config.settings.hold_ms}")
 
     def ev(down: bool) -> ButtonEvent:
-        return ButtonEvent(key="back", is_down=down, time_ns=time.monotonic_ns(), code=158, value=int(down))
+        return ButtonEvent(
+            key="back", is_down=down, time_ns=time.monotonic_ns(), code=158, value=int(down)
+        )
 
     async def press(hold_ms: int) -> None:
         engine.handle(ev(True))

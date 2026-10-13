@@ -1,0 +1,37 @@
+[tool.ruff]
+# 本仓库的 Python 都是本机侧工具（补丁 / 测试仿真 / 维护脚本），跟 mi-remote 主程序一样跑在 3.12。
+target-version = "py312"
+line-length = 100
+exclude = [
+    "app/build",
+    "app/.dart_tool",
+    # 上游官方安装器（离线备用），保持与上游一致，不 lint / 不重排
+    "system/install-mi-remote.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort（import 排序）
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "SIM", # flake8-simplify
+]
+ignore = [
+    # 中文注释/文档串里的行宽由 line-length 统一管，缩进类交给 formatter
+    "E501",
+    # 诊断仿真脚本刻意用「一行多语句」的紧凑写法（print; print），不禁
+    "E701",
+    "E702",
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mi_remote_linux"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

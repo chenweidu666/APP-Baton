@@ -3,6 +3,7 @@
 
 用 MappingEngine 灌合成事件，不产生真实按键。
 """
+
 import asyncio
 import json
 import pathlib
@@ -33,7 +34,9 @@ async def main() -> int:
     engine = MappingEngine(config, run_action, on_layer=layers.append)
 
     def ev(key: str, down: bool) -> ButtonEvent:
-        return ButtonEvent(key=key, is_down=down, time_ns=time.monotonic_ns(), code=0, value=int(down))
+        return ButtonEvent(
+            key=key, is_down=down, time_ns=time.monotonic_ns(), code=0, value=int(down)
+        )
 
     async def tap(key: str, gap: float = 0.4) -> None:
         engine.handle(ev(key, True))
@@ -41,15 +44,15 @@ async def main() -> int:
         engine.handle(ev(key, False))
         await asyncio.sleep(gap)
 
-    runner = {"base": time.perf_counter()}
-
     async def step(desc: str, keys: list[str], gap: float = 0.4) -> None:
         fired.clear()
         before = layers[-1] if layers else -1
         for key in keys:
             await tap(key, gap)
         after = layers[-1] if layers else -1
-        print(f"{desc}\n  动作: {fired if fired else '(无)'}\n  层: {before} → {after} (变化记录 {layers})")
+        print(
+            f"{desc}\n  动作: {fired if fired else '(无)'}\n  层: {before} → {after} (变化记录 {layers})"
+        )
 
     print(f"double_ms={config.settings.double_ms} hold_ms={config.settings.hold_ms}\n")
 

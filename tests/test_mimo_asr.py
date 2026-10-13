@@ -33,9 +33,7 @@ class MimoAsrGlossaryTest(unittest.TestCase):
 
     def test_dict_with_aliases(self) -> None:
         raw = [{"term": "Vibe Coding", "aliases": ["Web God", "Web Calling"]}]
-        self.assertEqual(
-            parse_glossary(raw), [("Vibe Coding", ["Web God", "Web Calling"])]
-        )
+        self.assertEqual(parse_glossary(raw), [("Vibe Coding", ["Web God", "Web Calling"])])
 
     def test_alias_may_be_single_string(self) -> None:
         self.assertEqual(parse_glossary([{"term": "A", "aliases": "B"}]), [("A", ["B"])])

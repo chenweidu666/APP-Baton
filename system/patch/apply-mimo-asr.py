@@ -31,14 +31,14 @@ LOAD_NEW = '''    def load_model(self) -> bool:
             return True
         if self.active_engine == "sherpa-paraformer":'''
 
-TRANSCRIBE_OLD = '''        prepared = self._prepare_for_recognition(samples)
+TRANSCRIBE_OLD = """        prepared = self._prepare_for_recognition(samples)
         if prepared is None:
             return None
 
         if not self.load_model():
             return None
-'''
-TRANSCRIBE_NEW = '''        prepared = self._prepare_for_recognition(samples)
+"""
+TRANSCRIBE_NEW = """        prepared = self._prepare_for_recognition(samples)
         if prepared is None:
             return None
 
@@ -47,7 +47,7 @@ TRANSCRIBE_NEW = '''        prepared = self._prepare_for_recognition(samples)
 
         if not self.load_model():
             return None
-'''
+"""
 
 METHODS = '''
     def _transcribe_mimo_or_fallback(self, prepared):
@@ -82,7 +82,7 @@ METHODS = '''
 
 '''
 
-METHODS_OLD_FALLBACK = '''    def _transcribe_mimo_or_fallback(self, prepared):
+METHODS_OLD_FALLBACK = """    def _transcribe_mimo_or_fallback(self, prepared):
         try:
             from . import mimo_asr
 
@@ -101,14 +101,14 @@ METHODS_OLD_FALLBACK = '''    def _transcribe_mimo_or_fallback(self, prepared):
                 self.active_engine = previous
         logger.error("MiMo ASR 失败且本地 Paraformer 不可用")
         return None
-'''
+"""
 
-MAIN_OLD = '''        choices=["auto", "faster-whisper", "sherpa-paraformer", "voxtype-paraformer"],
+MAIN_OLD = """        choices=["auto", "faster-whisper", "sherpa-paraformer", "voxtype-paraformer"],
         default="auto",
-        help="转写引擎；auto 优先常驻 Sherpa-ONNX Paraformer（默认: auto）",'''
-MAIN_NEW = '''        choices=["auto", "faster-whisper", "sherpa-paraformer", "voxtype-paraformer", "mimo-asr"],
+        help="转写引擎；auto 优先常驻 Sherpa-ONNX Paraformer（默认: auto）","""
+MAIN_NEW = """        choices=["auto", "faster-whisper", "sherpa-paraformer", "voxtype-paraformer", "mimo-asr"],
         default="auto",
-        help="转写引擎；auto 优先常驻 Sherpa-ONNX Paraformer；mimo-asr 为小米云端（默认: auto）",'''
+        help="转写引擎；auto 优先常驻 Sherpa-ONNX Paraformer；mimo-asr 为小米云端（默认: auto）","""
 
 
 def patch_text(path: Path, replacements: list[tuple[str, str]]) -> bool:
@@ -144,7 +144,10 @@ def main() -> None:
     changed = False
     voice_text = voice.read_text(encoding="utf-8")
     if METHODS_OLD_FALLBACK in voice_text:
-        voice.write_text(voice_text.replace(METHODS_OLD_FALLBACK, METHODS.strip("\n") + "\n", 1), encoding="utf-8")
+        voice.write_text(
+            voice_text.replace(METHODS_OLD_FALLBACK, METHODS.strip("\n") + "\n", 1),
+            encoding="utf-8",
+        )
         changed = True
         print(f"已关闭本地回退 {voice}")
     elif METHODS.strip() not in voice_text:
