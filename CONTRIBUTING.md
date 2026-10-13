@@ -18,7 +18,7 @@
 
 ```bash
 git clone https://github.com/chenweidu666/APP-Baton.git
-cd Baton
+cd APP-Baton
 ./install.sh              # 幂等；已就绪的部分会自动跳过
 cd app && ./run.sh        # 开发托盘应用（构建 + 重启）
 ```
@@ -27,18 +27,32 @@ cd app && ./run.sh        # 开发托盘应用（构建 + 重启）
 - 键位改动：改 `system/mapping.json`，用 `mi-remote config validate` 校验，再 `./install.sh` 或重启服务
 - 托盘应用：改 `app/lib/main.dart`，`cd app && ./run.sh`
 
+## 分支模型
+
+- **`master`** —— 主分支 / 发布分支（GitHub 默认）。只放**已发布**的状态；每次发布在这里打 `vX.Y.Z` 标签并更新 `CHANGELOG.md`。
+- **`develop`** —— 开发集成分支。**日常提交先进这里**，攒够一批再合到 `master` 发版。
+- **临时分支（可选，改动较大时）** —— 从 `develop` 切出 `feat/xxx` 或 `fix/xxx`，自测完合回 `develop`。
+
+```
+feat/xxx ──► develop ──►（发版时）master + vX.Y.Z 标签 + CHANGELOG
+```
+
+> 单条小改动（改错字、补个键位）直接提交到 `develop` 即可，不必开临时分支。
+
 ## 提交改动
 
 1. 先自查：
    ```bash
-   mi-remote config validate system/mapping.json      # 键位配置
-   cd app && flutter analyze                          # 托盘应用
-   bash tests/test_double.py 2>/dev/null || true      # 行为仿真（需 mi-remote 的 venv python）
+   make check     # ruff lint + format + 脚本语法（按 shebang 分流）
+   make test      # 单元测试（unittest）
+   cd app && flutter analyze      # 托盘应用
    ```
+   > 只改了键位的话，另跑 `mi-remote config validate system/mapping.json`。
 2. **同步文档**：改了键位就更新 `docs/指南.md` 第 1 章（使用与键位）与开头的键位图（`python3 tools/gen-keymap-image.py`），两份 README 里的表格也要跟着改（本项目的硬性要求）
 3. **双语 README**：改动涉及 README 时，请同步 `README.md`（英文）与 `README.zh-CN.md`（中文）
-3. **提交信息**：一律用**英文**，遵循 Conventional Commits（见下方「提交信息规范」）
-4. 开 PR 时说明：**现象 / 原因 / 怎么验证的**（最好附上仿真或真机证据）
+4. **提交信息**：一律用**英文**，遵循 Conventional Commits（见下方「提交信息规范」）
+5. 开 PR 时说明：**现象 / 原因 / 怎么验证的**（最好附上仿真或真机证据）
+6. **合到哪里**：目标分支写 `develop`（见上方「分支模型」）
 
 ## 提交信息规范（Commit messages）
 
