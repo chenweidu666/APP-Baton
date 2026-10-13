@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# 只读即可：安装器会写到系统路径，但 CI 里不该真的装
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Python (unittest + ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install deps
+        run: pip install numpy ruff
+      - name: Unit tests
+        run: python -m unittest tests.test_mimo_asr
+      - name: ruff lint
+        run: ruff check .
+      - name: ruff format
+        run: ruff format --check .
+
+  shell:
+    name: Shell / Python syntax
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: bash scripts
+        run: for f in install.sh scripts/*; do
+               case "$(head -1 "$f")" in
+                 *bash*|*/sh) bash -n "$f" ;;
+               esac
+             done
+      - name: python scripts
+        run: for f in install.sh scripts/*; do
+               case "$(head -1 "$f")" in
+                 *python*) python3 -m py_compile "$f" ;;
+               esac
+             done
+
+  flutter:
+    name: Flutter analyze
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+        working-directory: app
+      - run: flutter analyze
+        working-directory: app

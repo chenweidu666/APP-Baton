@@ -1,0 +1,13 @@
+# 文件属性。
+#
+# 用途（只跑 Linux，不按多平台适配）：
+#  · 二进制文件显式标 binary —— 否则 git diff 会拿它们当文本乱显示；
+#  · 文本统一 LF —— 避免不同工具/编辑器带来行尾漂移。
+* text=auto eol=lf
+
+# 二进制：不做行尾/文本处理
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.so binary

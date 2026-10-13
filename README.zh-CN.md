@@ -6,6 +6,7 @@
 ![Platform](https://img.shields.io/badge/platform-Linux%20%2F%20GNOME%20Wayland-blue)
 ![Remote](https://img.shields.io/badge/remote-Xiaomi%20BLE%20Voice%20Remote%20(2717%3A32b8)-orange)
 ![托盘应用](https://img.shields.io/badge/%E6%89%98%E7%9B%98%E5%BA%94%E7%94%A8-Flutter-02569B)
+![CI](https://img.shields.io/github/actions/workflow/status/chenweidu666/APP-Baton/CI/master)
 
 [English](README.md) · **中文说明**
 
@@ -48,6 +49,7 @@
 - 🖥️ **托盘状态**：🟢 正常 / 🟡 按键可用但语音未连 / 🔴 异常；**断连时弹通知**（"按任意键唤醒"）
 - 🔌 **开机自启**：遥控器服务 + 注入守护 + 托盘，登录即用
 - 🧩 **纯脚本可复现**：`install.sh` 幂等部署；所有踩坑与验证过程都写在 `docs/` 里
+- 🔧 **排障速查**：[`docs/faq.md`](docs/faq.md)（按键 / 语音 / 蓝牙 / 改配置）
 
 ## 快速开始
 

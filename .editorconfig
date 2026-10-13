@@ -1,0 +1,24 @@
+# https://editorconfig.org
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 2
+
+[*.py]
+indent_size = 4
+
+[*.dart]
+indent_size = 2
+
+# Markdown 里的行尾空格有些是有意义的（换行），不裁
+[*.md]
+trim_trailing_whitespace = false
+
+# Makefile 必须用 tab
+[Makefile]
+indent_style = tab

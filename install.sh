@@ -110,6 +110,11 @@ if [ "$DO_SERVICE" = 1 ]; then
   systemctl --user restart mi-remote.service || true
   sleep 3
   echo "   服务状态: $(systemctl --user is-active mi-remote.service) / $(systemctl --user is-active mi-remote-uinputd.service)"
+  # 提交钩子：让 .githooks/ 生效（幂等；不在 git 仓库里就跳过）
+  if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+    git -C "$ROOT" config core.hooksPath .githooks
+    echo "   已启用提交钩子 .githooks/（core.hooksPath）"
+  fi
 else
   echo "== 6/6 跳过 systemd（--no-service）=="
 fi

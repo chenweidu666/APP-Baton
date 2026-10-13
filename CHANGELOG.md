@@ -5,6 +5,20 @@
 
 ## Unreleased
 
+## [0.1.0] - 2026-10-13
+
+### 开源包装（Packaging）
+
+- **CI**（`.github/workflows/ci.yml`）：Python（unittest + ruff lint/format）、按 shebang 分流的脚本语法检查、`flutter analyze`
+- **ruff**（`pyproject.toml`）：target py312、100 列、E/W/F/I/UP/B/C4/SIM；排除上游 `install-mi-remote.py`。并跑过一次 `ruff format` 统一格式
+- **`Makefile`**：`make test` / `lint` / `fmt` / `check` / `install`
+- **`.gitattributes`** / **`.editorconfig`**：二进制标记、文本统一 LF、Python 4 空格 / Dart 2 空格
+- **`SECURITY.md`**：私密漏洞上报流程 + 本项目接触的敏感面（按键注入 / 蓝牙 / polkit / 云端 key）+ 密钥约定
+- **`.github/`**：bug / feature issue 模板、PR 模板、Dependabot（actions + pip）
+- **`docs/faq.md`**：排障速查（按键 / 语音 / 蓝牙 / 改配置），从 900+ 行的指南里抽出来
+- 修复 clone URL（仓库改名 `APP-Baton`）、重新生成过期的键位图、`install.sh` 顺带启用 `.githooks`（`core.hooksPath`）
+- 上游安装器下载补 **SHA256 校验**
+
 ### 新增（Added）
 
 - **蓝牙看门狗 `baton-bt-watchdog`**：修复"遥控器睡着后不会自己连回来"。BlueZ 5.72 默认不为 HID 设备重连，且 `mi-remote` 每次连接超时都会在 BlueZ 里留下一个挂起的连接请求（`Operation already in progress`），把后续尝试全挡住。看门狗平时只体检；掉线并超过 20 秒宽限后才出手：试连 → 报"挂起"就 `disconnect` 清掉再连（不暂停 `mi-remote`，也不默认重启蓝牙栈），未连上按 15s→60s 退避。随机自启服务 `baton-bt-watchdog.service`（坑 13）

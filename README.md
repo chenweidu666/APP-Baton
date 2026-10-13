@@ -6,6 +6,7 @@
 ![Platform](https://img.shields.io/badge/platform-Linux%20%2F%20GNOME%20Wayland-blue)
 ![Remote](https://img.shields.io/badge/remote-Xiaomi%20BLE%20Voice%20Remote%20(2717%3A32b8)-orange)
 ![Made with Flutter](https://img.shields.io/badge/tray%20app-Flutter-02569B)
+![CI](https://img.shields.io/github/actions/workflow/status/chenweidu666/APP-Baton/CI/master)
 
 **English** · [中文说明](README.zh-CN.md)
 
@@ -95,7 +96,8 @@ mi-remote doctor      # self-check (expect: 12 pass / 1 warning / 0 fail)
 | Volume ± | `PageUp` / `PageDown` | — | — |
 | Power | **`Esc`** (interrupt the AI / close a dialog) | close current window | — |
 
-Full keymap with the reasoning behind every choice, the engineering log (principles, step-by-step reproduction, 11 pitfalls) and the roadmap: **[`docs/指南.md`](docs/指南.md)** (Chinese).
+Full keymap with the reasoning behind every choice, the engineering log (principles, step-by-step reproduction, 14 pitfalls) and the roadmap: **[`docs/指南.md`](docs/指南.md)** (Chinese).
+Quick troubleshooting (keys / voice / Bluetooth / config changes): **[`docs/faq.md`](faq.md)**.
 
 ## Tray app (`app/`)
 
