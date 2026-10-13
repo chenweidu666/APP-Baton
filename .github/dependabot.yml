@@ -1,11 +1,14 @@
 version: 2
 updates:
+  # 按分支模型，依赖更新也进 develop（见 CONTRIBUTING.md「分支模型」）
   - package-ecosystem: "github-actions"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
   - package-ecosystem: "pip"
     directory: "/"
+    target-branch: "develop"
     schedule:
       interval: "weekly"
     allow:
