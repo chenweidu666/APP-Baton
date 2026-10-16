@@ -104,12 +104,24 @@ Future<(bool, String?)> _hidNode() async {
   return (false, null);
 }
 
+/// 通知图标用项目 logo（品牌徽章），而不是托盘的状态图标 ——
+/// 一条「已连接」的通知配红色禁止图标会很怪。两个路径都不在时就不带图标。
+String? _brandIcon() {
+  for (final p in [
+    '$kRepoPath/docs/images/logo.png',
+    '${Platform.environment['HOME']}/.local/share/icons/hicolor/512x512/apps/baton.png',
+  ]) {
+    if (File(p).existsSync()) return p;
+  }
+  return null;
+}
+
 /// 桌面通知（走 notify-send）。失败静默，不影响主流程。
 Future<void> _notify(String title, String body, {bool urgent = false}) async {
-  final icon = File('$kRepoPath/app/assets/tray_off.png');
+  final icon = _brandIcon();
   final args = <String>[
     '-a', 'Baton Mi',
-    if (icon.existsSync()) ...['-i', icon.path],
+    if (icon != null) ...['-i', icon],
     if (urgent) ...['-u', 'critical'],
     title,
     body,
