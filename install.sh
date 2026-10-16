@@ -36,6 +36,9 @@ done
 echo "== 1/6 安装脚本到 $BIN =="
 mkdir -p "$BIN"
 for f in "$ROOT"/scripts/*; do
+  # 跳过子目录：`make check` 会在 scripts/ 下留一个 __pycache__，
+  # 对它 install 会返回 1，配合 set -e 会让整个安装在第 1 步就中断。
+  [ -f "$f" ] || continue
   name="$(basename "$f")"
   install -m 755 "$f" "$BIN/$name"
   echo "   $name"
@@ -59,6 +62,11 @@ if python3 "$ROOT/system/patch/apply-mimo-asr.py"; then
   echo "   mimo-asr 已打入本机 mi-remote"
 else
   echo "   ⚠️ mimo-asr 补丁跳过（可能尚未安装 mi-remote）"
+fi
+if python3 "$ROOT/system/patch/apply-ble-teardown.py"; then
+  echo "   断开收尾补丁已打入本机 mi-remote"
+else
+  echo "   ⚠️ 断开收尾补丁跳过（可能尚未安装 mi-remote）"
 fi
 if [ "$DO_PATCH" = 1 ]; then
   bash "$ROOT/system/patch/apply-patch.sh" --mapping || echo "   ⚠️ mapping 补丁跳过"
