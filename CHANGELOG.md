@@ -5,6 +5,31 @@
 
 ## Unreleased
 
+### 修复（Fixed）
+
+- **休眠恢复后遥控器卡死**（坑 15，2026-10-16 实测 9 分钟不可用）：看门狗清 BlueZ 挂起请求用的
+  `bluetoothctl disconnect` 会把 `mi-remote` 正在飞的连接一起取消，两边互相打断、卡死数分钟。
+  现在清挂起前先 `SIGSTOP` 冻住 `mi-remote`、清完 `SIGCONT` 解冻（看门狗被 kill 时 trap 兜底）
+- **托盘图标一直闪**：两处原因 —— ① 托盘每 5 秒无条件 `setIcon` + `setContextMenu`，而
+  `tray_manager` 的 Linux 端每次 `setContextMenu` 都新建一个 `GtkMenu`（旧的既不销毁也不复用），
+  宿主跟着重渲染；现在只有显示内容真的变了才写。② 内核在 BLE 重连时会把 HID 节点摘掉再挂回来，
+  单次探测落空就翻红，现在连续两次落空才认定缺失
+- **语音掉线时托盘显示不出来**：`bluetoothctl` 报 `Connected: yes` 只说明 ACL 在，坑 15 那次它
+  整整 9 分钟都是 yes 而语音早已不可用。托盘新增"语音链路"状态（读 `mi-remote` 最近一条链路事件），
+  「已连接」不再等于「语音可用」，掉线时弹通知 `语音链路已断开`
+- **托盘崩溃后没人管**：`11:08:55` 它在 `dart:io` 事件线程里 segfault 后进程就这么没了，直到手动
+  重装才回来。`scripts/baton` 改成监视循环：正常退出（菜单「退出」）/ SIGTERM 不重启，崩溃 5 秒后重来
+- **`baton-asr-guard` 会误判**：会话计数器只在「音频流结束」归零，一段被中断的录音（只有开始、
+  没有结束）会让下一次正常的开始一起算成 2、白重启一次正在进行的口述。现在掉线/重连也归零
+  （实测那次坏会话仍能正确检出）
+- **`mi-remote` 的 BLE 断开收尾没跑**（坑 14 的根因线索）：`ble_client.disconnect()` 写的是
+  `if client and client.is_connected:`，链路是**掉**的时候 `is_connected` 已经是 `False`，于是 bleak
+  的 `disconnect()` 根本不被调用 —— `_cleanup_all()` 不跑、D-Bus watcher 不摘、bus 不关。新增
+  `system/patch/apply-ble-teardown.py`（随 `install.sh` 自动应用，改前备份）改成 `if client is not None:`。
+  根因层级未 100% 定论，`baton-asr-guard` 继续保留兜底
+- **`baton-recover.service` 永久 failed**：遥控器只是睡着时脚本主动 `exit 3`，unit 没声明
+  `SuccessExitStatus=3`，于是登录时遥控器一睡就留下一个 failed 状态、把真正的毛病淹掉
+
 ### 变更（Changed）
 
 - **托盘图标重做**：原来是"绿/黄/红三色圆点"，和项目 logo 完全不像同一家的东西。现在换上 logo 的徽章形状
