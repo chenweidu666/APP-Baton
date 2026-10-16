@@ -9,6 +9,9 @@ Type=oneshot
 # 给蓝牙与遥控器一点建连时间，再检测并按需逐级恢复（含重启 bluetooth.service）
 ExecStart=/bin/sh -c 'sleep 6; exec "%h/.local/bin/baton-bt-recover" --quiet'
 RemainAfterExit=yes
+# 退出码 3 = "蓝牙没连上，多半只是遥控器在休眠"，是脚本主动放弃、不是故障。
+# 不声明的话，登录时遥控器一睡着就会留下一个 failed 状态，把真正的毛病淹掉。
+SuccessExitStatus=3
 
 [Install]
 WantedBy=graphical-session.target
