@@ -38,7 +38,7 @@ The moves you repeat all day while an agent writes your code — and the button 
 | Open the agent or the editor | **double-tap Home** / **TV** | launches OpenCode / Cursor, raising the existing window instead of duplicating it |
 | Fix a typo in your prompt | **tap Back** | `Backspace`, instant (tap repeatedly to delete fast) |
 | Scroll a long answer | **Volume ±** | `PageUp` / `PageDown` |
-| Check it is still alive | glance at the tray | 🟢 / 🟡 / 🔴, plus a desktop notification when the remote drops |
+| Check it is still alive | glance at the tray | green = healthy · amber = voice link down · red = broken; a desktop notification when the remote drops |
 
 Your hands never leave the remote, and the microphone is on the remote — so you can dictate from across the
 room, not just from your desk.
@@ -55,8 +55,9 @@ room, not just from your desk.
 - 🪟 **Real window switcher**: long-press *Menu*, then `←/→` cycles through **all** windows
   (plain `Alt+Tab` can only toggle between the last two)
 - ⌨️ **Sensible 13-key layout**: delete, Enter, arrows, `Esc`, `PageUp/PageDown`, `Ctrl+B`, … (see table below)
-- 🖥️ **Tray indicator**: 🟢 healthy / 🟡 keys work but voice link is down / 🔴 service or input node broken;
-  sends a **desktop notification on disconnect** ("press any key to wake it")
+- 🖥️ **Tray indicator**: the project badge with the state carried by its colour — white remote on green (healthy) /
+  amber (keys work but voice link down) / red (service or input node broken); sends a **desktop notification on
+  disconnect** ("press any key to wake it")
 - 🔌 **Starts at login**: remote service + injection daemon + tray
 - 🧩 **Reproducible**: idempotent `install.sh`; every pitfall and verification step is written down in `docs/`
 
@@ -114,11 +115,15 @@ Keymap cheat sheet ▸    ← generated live from mapping.json
 Re-check / Restart service / Reconnect Bluetooth / Service log / Open docs / Quit
 ```
 
-| Icon | Meaning |
-|---|---|
-| 🟢 green | Bluetooth + input node + services all healthy |
-| 🟡 yellow | Keys work, but the BLE voice link is down (mic key unavailable) |
-| 🔴 red | Service down / input node missing (neither keys nor voice will work) |
+The tray icon is the project badge — the same circular mark as the logo, with the state carried by its colour.
+
+![tray icons: healthy / voice link down / broken](docs/images/tray-icons.png)
+
+| State | What you see | Meaning |
+|---|---|---|
+| Healthy | white remote on a **green** badge | Bluetooth + input node + services all healthy |
+| Voice down | white remote on an **amber** badge | Keys work, but the BLE voice link is down (mic key unavailable) |
+| Broken | white remote on a **red** badge | Service down / input node missing (neither keys nor voice will work) |
 
 Disconnect and reconnect raise desktop notifications. The app is started at login by `install.sh`.
 For development: `cd app && ./run.sh` (builds and restarts).
@@ -140,7 +145,7 @@ because the upstream header libraries are gone. Hence a small uinput shim:
 
 ```
 ├── app/         tray app (Flutter, tray-only, no window)
-├── tools/       maintenance tools (keymap image, logo) — not installed
+├── tools/       maintenance tools (keymap image, logo, tray icons) — not installed
 ├── scripts/     small tools called by mi-remote → installed into ~/.local/bin
 │                (injection shim / window switcher / window focus / launchers / tray wrapper)
 ├── system/      udev rule · systemd units · keymap config · desktop entry · local patch

@@ -11,15 +11,20 @@
 #      卡住，之后所有连接尝试全被挡住。
 #   4. 实测：停掉 mi-remote 后单独 connect 仍被挂起挡住；而"先 disconnect（取消挂起）
 #      再 connect"就能连上。
+#   5. 但 disconnect 会连 mi-remote **正在飞的那次连接**一起取消 —— 日志里紧跟着一条
+#      br-connection-canceled，它只能重试，重试又留下新的挂起请求。两边互相打断，
+#      2026-10-16 从休眠恢复后把遥控器卡死了 9 分钟（见 docs/指南.md 坑 15）。
 #
 # 所以看门狗只做一件真正有用的事：**发现掉线后，清掉那个挂起的连接请求再试连**，
-# 让 mi-remote 随后的重试能成功。不暂停 mi-remote（挂起在 BlueZ 里，停服务也清不掉），
-# 也不默认重启蓝牙栈（要 polkit 授权、且深度休眠时重启无效）。
+# 让 mi-remote 随后的重试能成功。清之前先把 mi-remote 临时冻住（SIGSTOP），
+# 免得它在我们清的过程中又发一个连接请求。也不默认重启蓝牙栈（要 polkit 授权、
+# 且深度休眠时重启无效）。
 #
 # 策略：
 #   · 正常时每 HEALTHY_SLEEP 秒体检，完全不打扰 mi-remote；
 #   · 掉线后先给 mi-remote 宽限 GRACE 秒（它常能自己连回）；
-#   · 仍掉线才出手：试连 → 若报"already in progress"则 disconnect 清挂起再连；
+#   · 仍掉线才出手：试连 → 若报"already in progress"则冻住 mi-remote、disconnect
+#     清挂起、解冻、再连；
 #   · 没连上就按 NUDGE_MIN→NUDGE_MAX 指数退避（遥控器长时间休眠时安静等待）。
 #
 # 关于重启蓝牙栈（默认关）：设 BATON_WD_ALLOW_RESTART=1 才启用，作为最后手段。
@@ -34,6 +39,7 @@ set -uo pipefail
 MAC="${BATON_MAC:-F0:2B:18:87:37:B7}"
 VENDOR="${BATON_VENDOR:-2717}"
 PRODUCT="${BATON_PRODUCT:-32b8}"
+REMOTE_SVC="${BATON_REMOTE_UNIT:-mi-remote.service}"
 
 GRACE="${BATON_WD_GRACE:-20}"
 HEALTHY_SLEEP="${BATON_WD_HEALTHY_SLEEP:-8}"
@@ -68,6 +74,22 @@ hid_node() {
 
 healthy() { bt_connected && hid_node >/dev/null; }
 
+# 临时冻结/解冻 mi-remote —— 只在真要 disconnect 时用。
+# 冻结而不是停服务：不触发它的 HID 恢复流程（那又会发一次连接请求），
+# 也保住它已拿到的 /dev/input 独占句柄，几乎不产生额外的蓝牙动作。
+_remote_frozen=0
+freeze_remote() {
+  systemctl --user kill --signal=SIGSTOP "$REMOTE_SVC" 2>/dev/null || true
+  _remote_frozen=1
+}
+thaw_remote() {
+  [ "$_remote_frozen" = 1 ] || return 0
+  systemctl --user kill --signal=SIGCONT "$REMOTE_SVC" 2>/dev/null || true
+  _remote_frozen=0
+}
+# 看门狗自己被杀掉时也要解冻，否则遥控器会一直僵在那里
+trap 'thaw_remote' EXIT INT TERM
+
 # 出手一次：清挂起 + 试连。返回 0 = 已连上
 nudge() {
   local out
@@ -78,9 +100,15 @@ nudge() {
   if bt_connected; then return 0; fi
 
   if printf '%s' "$out" | grep -qi "already in progress"; then
-    log "检测到 BlueZ 挂起的连接请求 → disconnect 清掉后重连"
+    # disconnect 能清掉挂起的请求，但也会把 mi-remote 正在飞的那次连接一起取消
+    # （日志里紧跟着一条 br-connection-canceled），于是它重试、又留下新的挂起 ——
+    # 两边互相打断，2026-10-16 实测把遥控器卡死了 9 分钟。
+    # 所以先停掉 mi-remote，让它不再发新请求，清完再把它拉起来。
+    log "检测到 BlueZ 挂起的连接请求 → 暂停 mi-remote、清挂起后重连"
+    freeze_remote
     timeout 5 bluetoothctl disconnect "$MAC" >/dev/null 2>&1
     sleep 1
+    thaw_remote
     bt_connected && return 0
     timeout "$CONNECT_TIMEOUT" bluetoothctl connect "$MAC" >/dev/null 2>&1
     bt_connected && return 0

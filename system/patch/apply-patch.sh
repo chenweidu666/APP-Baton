@@ -14,6 +14,7 @@ for arg in "$@"; do
 done
 
 python3 "$HERE/apply-mimo-asr.py" "$V"
+python3 "$HERE/apply-ble-teardown.py" "$V"
 
 if [ "$DO_MAPPING" = 1 ]; then
   F="$HOME/.local/share/mi-remote-linux/versions/$V/lib/python3.12/site-packages/mi_remote_linux/mapping_engine.py"

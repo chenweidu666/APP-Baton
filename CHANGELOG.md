@@ -5,6 +5,40 @@
 
 ## Unreleased
 
+### 修复（Fixed）
+
+- **休眠恢复后遥控器卡死**（坑 15，2026-10-16 实测 9 分钟不可用）：看门狗清 BlueZ 挂起请求用的
+  `bluetoothctl disconnect` 会把 `mi-remote` 正在飞的连接一起取消，两边互相打断、卡死数分钟。
+  现在清挂起前先 `SIGSTOP` 冻住 `mi-remote`、清完 `SIGCONT` 解冻（看门狗被 kill 时 trap 兜底）
+- **托盘图标一直闪**：两处原因 —— ① 托盘每 5 秒无条件 `setIcon` + `setContextMenu`，而
+  `tray_manager` 的 Linux 端每次 `setContextMenu` 都新建一个 `GtkMenu`（旧的既不销毁也不复用），
+  宿主跟着重渲染；现在只有显示内容真的变了才写。② 内核在 BLE 重连时会把 HID 节点摘掉再挂回来，
+  单次探测落空就翻红，现在连续两次落空才认定缺失
+- **语音掉线时托盘显示不出来**：`bluetoothctl` 报 `Connected: yes` 只说明 ACL 在，坑 15 那次它
+  整整 9 分钟都是 yes 而语音早已不可用。托盘新增"语音链路"状态（读 `mi-remote` 最近一条链路事件），
+  「已连接」不再等于「语音可用」，掉线时弹通知 `语音链路已断开`
+- **托盘崩溃后没人管**：`11:08:55` 它在 `dart:io` 事件线程里 segfault 后进程就这么没了，直到手动
+  重装才回来。`scripts/baton` 改成监视循环：正常退出（菜单「退出」）/ SIGTERM 不重启，崩溃 5 秒后重来
+- **`baton-asr-guard` 会误判**：会话计数器只在「音频流结束」归零，一段被中断的录音（只有开始、
+  没有结束）会让下一次正常的开始一起算成 2、白重启一次正在进行的口述。现在掉线/重连也归零
+  （实测那次坏会话仍能正确检出）
+- **`mi-remote` 的 BLE 断开收尾没跑**（坑 14 的根因线索）：`ble_client.disconnect()` 写的是
+  `if client and client.is_connected:`，链路是**掉**的时候 `is_connected` 已经是 `False`，于是 bleak
+  的 `disconnect()` 根本不被调用 —— `_cleanup_all()` 不跑、D-Bus watcher 不摘、bus 不关。新增
+  `system/patch/apply-ble-teardown.py`（随 `install.sh` 自动应用，改前备份）改成 `if client is not None:`。
+  根因层级未 100% 定论，`baton-asr-guard` 继续保留兜底
+- **`baton-recover.service` 永久 failed**：遥控器只是睡着时脚本主动 `exit 3`，unit 没声明
+  `SuccessExitStatus=3`，于是登录时遥控器一睡就留下一个 failed 状态、把真正的毛病淹掉
+
+### 变更（Changed）
+
+- **托盘图标重做**：原来是"绿/黄/红三色圆点"，和项目 logo 完全不像同一家的东西。现在换上 logo 的徽章形状
+  （白色遥控器剪影），**状态直接由徽章底色表达**（绿 = 正常 / 黄 = 按键可用但语音未连 / 红 = 服务或按键节点异常），
+  不再另放一个小色点 —— 小元素在 22px 的托盘栏上既看不清、又和徽章抢注意力。
+  图标由新增的维护工具 [`tools/make-tray-icons.py`](tools/make-tray-icons.py) 生成（纯 Pillow 画几何，
+  可复现、不依赖出图模型），`--preview` 会刷新 `docs/images/tray-icons.png` 对比图
+- **桌面通知改用项目 logo 做图标**：之前用的是托盘"异常"图标，于是"遥控器已连接"这条通知上挂着一个红色禁止标志
+
 ## [0.1.0] - 2026-10-13
 
 ### 开源包装（Packaging）
@@ -29,13 +63,13 @@
 - **小米 MiMo 云端 ASR**：`system/cloud-asr.json` 同时放地址、模型和 api_key（gitignore）；挂掉时桌面通知，可用 `cloud-asr-health` 探测。文档写明建议理由（远场识别率、内存与时延、官方单价 ¥0.5/音频小时 与 Token Plan 30M Credits/小时）
 - **转写后整理（可选，默认关）**：`mimo-v2.5-asr` 的提示词由小米网关注入、调用方改不了，所以「口语 → 书面 prompt」改成转写后再走一道对话模型（`mimo-v2.6-flash`）。`cloud-asr.json` 的 `cleanup` 段控制开关/模型/提示词/超时；任何失败（超时、空结果、长度异常、像拒答、像工具调用）都**回退转写原文**，保证不掉字。默认关是因为延迟：只走 ASR 实测约 **1 秒**，加一层约 **2 秒**（重启后第一句约 7.5 秒）
 - **仓库结构**：新增 `tools/`（维护工具：键位图生成、logo 生成），运行时脚本仍留在 `scripts/`（会被装进 `~/.local/bin`）
-- **项目 logo**：圆形徽章（遥控器 + 信号弧），`docs/images/logo.png`，同时用作桌面图标；托盘栏仍是绿/黄/红三色状态圆点
+- **项目 logo**：圆形徽章（遥控器 + 信号弧），`docs/images/logo.png`，同时用作桌面图标；托盘栏当时还是绿/黄/红三色状态圆点（现已在 `Unreleased` 里重做成同款徽章）
 - **开源化包装**：双语 README（`README.md` 英文 / `README.zh-CN.md` 中文）、`LICENSE`(MIT)、`CHANGELOG.md`、
   `CONTRIBUTING.md`、`THIRD_PARTY.md`（第三方组件与许可证清单）、**键位图**（脚本随配置自动生成）
 
 - **托盘应用 Baton Mi**（Flutter，纯托盘无窗口）
   - 三层连接状态：蓝牙链路 / HID 按键节点 / 服务与注入守护
-  - 图标三态：🟢 正常 · 🟡 按键可用但语音未连 · 🔴 服务或按键异常
+  - 图标三态：🟢 正常 · 🟡 按键可用但语音未连 · 🔴 服务或按键异常（`Unreleased` 里已重做成与 logo 同款的徽章图标）
   - 菜单：状态展示 · **键位速查 ▸**（实时读 `mapping.json` 生成）· 重新检测 · 重启服务 · 重连蓝牙 · 查看日志 · 打开文档 · 退出
   - **断连提醒**：蓝牙断开/恢复时桌面通知（1 分钟冷却，恢复提醒不受冷却限制）
   - 开机自启（`install.sh` 写入 `~/.config/autostart/`）

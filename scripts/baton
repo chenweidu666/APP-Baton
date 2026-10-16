@@ -1,3 +1,38 @@
 #!/bin/bash
-# 启动 Baton Mi 托盘应用（bundle 由 install.sh 装到 ~/.local/share/baton）
-exec "$HOME/.local/share/baton/baton" "$@"
+# 启动 Baton Mi 托盘应用（bundle 由 install.sh 装到 ~/.local/share/baton）。
+#
+# 托盘是唯一让用户看到链路状态的东西，但它以前由 autostart 直接拉起、没人守着：
+# 2026-10-16 11:08 它在 dart:io 事件线程里 segfault（内核日志 "dart:io EventHa…:
+# segfault"），进程就这么没了，一直等到手动重装才回来。所以这里兜一层监视循环。
+#
+# 退出码的含义（决定要不要重来）：
+#   0         菜单里点了「退出」，尊重它
+#   130 / 143 SIGINT / SIGTERM —— 注销，或我们自己 pkill，不要拉起
+#   其它      崩溃（139 segfault、134 abort…），5 秒后重来
+#
+# 不用 set -e：本脚本的前提就是"子进程会失败"。
+set -uo pipefail
+
+APP="$HOME/.local/share/baton/baton"
+child=0
+
+# 自己被杀时把子进程一起带走，否则 pkill 只命中本脚本时会留下野托盘
+on_term() {
+  [ "$child" != 0 ] && kill "$child" 2>/dev/null
+  exit 143
+}
+trap on_term INT TERM
+
+while :; do
+  "$APP" "$@" &
+  child=$!
+  wait "$child"
+  rc=$?
+  child=0
+  case "$rc" in
+    0) exit 0 ;;
+    130 | 143) exit "$rc" ;;
+  esac
+  echo "[baton] 托盘异常退出（code=$rc），5 秒后重启"
+  sleep 5
+done
